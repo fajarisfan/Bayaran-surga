@@ -68,31 +68,39 @@ if uploaded_files:
 
 # --- ZONA TESTING (UNTUK PEMBUKTIAN) ---
 st.markdown("---")
-st.subheader("🛠️ Zona Testing (Gunakan ini kalau mau tes hasil)")
-st.info("Klik tombol di bawah untuk download file contoh, lalu upload kembali ke atas.")
+st.subheader("🛠️ Zona Testing (Versi Anti-Kosong)")
+st.info("Download file di bawah, lalu upload kembali ke atas untuk tes.")
 
 col1, col2 = st.columns(2)
 
+# Logic Generator File Test yang BENER
+def create_test_file(data, filename, start_row):
+    buf = io.BytesIO()
+    # Kita bikin DataFrame dulu
+    df_test = pd.DataFrame(data)
+    # Tulis ke Excel dengan 'startrow' untuk simulasi header berantakan
+    with pd.ExcelWriter(buf, engine='openpyxl') as writer:
+        df_test.to_excel(writer, index=False, startrow=start_row, sheet_name='Sheet1')
+    return buf.getvalue()
+
 with col1:
-    # Generator File Test 1
-    buf1 = io.BytesIO()
     data_test1 = {
         'NO': [1, 2, 3],
         'NIK': ['A001', 'A002', 'A003'],
         'NAMA': ['Zizah Admin', 'Budi Teknik', 'Ani Logistik'],
         'JABATAN': ['Admin', 'Staf', 'Staf']
     }
-    pd.DataFrame(data_test1).to_excel(buf1, index=False, startrow=5) # Ada sampah header
-    st.download_button("📥 Download File Test A", buf1.getvalue(), "Test_BA_Maret.xlsx")
+    # Simulasi header 'NAMA' ada di baris ke-6 (startrow=5)
+    file_a = create_test_file(data_test1, "Test_BA_Maret.xlsx", 5)
+    st.download_button("📥 Download File Test A", file_a, "Test_BA_Maret.xlsx")
 
 with col2:
-    # Generator File Test 2
-    buf2 = io.BytesIO()
     data_test2 = {
         'NO': [1, 2],
         'NIK': ['B001', 'B002'],
         'NAMA': ['Dedi Vendor', 'Eka Mandiri'],
         'JABATAN': ['Driver', 'Security']
     }
-    pd.DataFrame(data_test2).to_excel(buf2, index=False, startrow=3)
-    st.download_button("📥 Download File Test B", buf2.getvalue(), "Test_BA_April.xlsx")
+    # Simulasi header 'NAMA' ada di baris ke-4 (startrow=3)
+    file_b = create_test_file(data_test2, "Test_BA_April.xlsx", 3)
+    st.download_button("📥 Download File Test B", file_b, "Test_BA_April.xlsx")
