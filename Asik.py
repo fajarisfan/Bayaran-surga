@@ -26,18 +26,29 @@ if uploaded_files:
                 lambda x: x.str.contains('NAMA', case=False, na=False)
             ).any(axis=1)
 
-            if mask.any():
+           if mask.any():
                 header_idx = df[mask].index[0]
 
                 # Baca ulang dengan skiprows yang benar
                 df_clean = pd.read_excel(file, sheet_name=sheet_name, skiprows=header_idx)
+
+                # ✅ FIX: Buang kolom yang namanya "Unnamed" (kolom sampah)
+                df_clean = df_clean.loc[:, ~df_clean.columns.str.contains('^Unnamed')]
 
                 # Identifikasi kolom NAMA secara dinamis
                 nama_cols = [c for c in df_clean.columns if 'NAMA' in str(c).upper()]
 
                 if nama_cols:
                     col_key = nama_cols[0]
+                    # Bersihkan baris yang namanya benar-benar kosong
                     df_clean = df_clean.dropna(subset=[col_key])
+                    
+                    # ✅ FIX: Pastikan hanya mengambil kolom yang relevan saja (opsional)
+                    # Biar nggak banyak kolom sampah dari file aslinya
+                    cols_to_keep = ['NO', 'NIK', 'NAMA', 'JABATAN', 'PERUSAHAAN']
+                    existing_cols = [c for c in cols_to_keep if c in df_clean.columns]
+                    df_clean = df_clean[existing_cols].copy()
+
                     df_clean['Sumber_File'] = file.name.split('.')[0]
                     df_clean['Mandays_Bulan_Ini'] = days_input
                     all_data_frames.append(df_clean)
