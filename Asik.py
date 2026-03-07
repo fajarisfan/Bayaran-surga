@@ -17,34 +17,26 @@ if uploaded_files:
     all_data_frames = []
 
     for file in uploaded_files:
-        # ✅ KUNCI FIX: header=None supaya pandas tidak salah baca struktur file
         all_sheets = pd.read_excel(file, sheet_name=None, header=None)
 
         for sheet_name, df in all_sheets.items():
-            # Cari baris mana yang mengandung kata "NAMA"
             mask = df.astype(str).apply(
                 lambda x: x.str.contains('NAMA', case=False, na=False)
             ).any(axis=1)
 
-           if mask.any():
+            if mask.any():  # ✅ FIX: indentasi diperbaiki (sebelumnya ada spasi lebih)
                 header_idx = df[mask].index[0]
 
-                # Baca ulang dengan skiprows yang benar
                 df_clean = pd.read_excel(file, sheet_name=sheet_name, skiprows=header_idx)
 
-                # ✅ FIX: Buang kolom yang namanya "Unnamed" (kolom sampah)
                 df_clean = df_clean.loc[:, ~df_clean.columns.str.contains('^Unnamed')]
 
-                # Identifikasi kolom NAMA secara dinamis
                 nama_cols = [c for c in df_clean.columns if 'NAMA' in str(c).upper()]
 
                 if nama_cols:
                     col_key = nama_cols[0]
-                    # Bersihkan baris yang namanya benar-benar kosong
                     df_clean = df_clean.dropna(subset=[col_key])
-                    
-                    # ✅ FIX: Pastikan hanya mengambil kolom yang relevan saja (opsional)
-                    # Biar nggak banyak kolom sampah dari file aslinya
+
                     cols_to_keep = ['NO', 'NIK', 'NAMA', 'JABATAN', 'PERUSAHAAN']
                     existing_cols = [c for c in cols_to_keep if c in df_clean.columns]
                     df_clean = df_clean[existing_cols].copy()
