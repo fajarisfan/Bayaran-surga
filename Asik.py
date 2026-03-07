@@ -137,27 +137,76 @@ st.markdown("---")
 st.subheader("🛠️ Zona Testing (Gunakan ini kalau mau tes hasil)")
 st.info("Download file di bawah, lalu upload kembali ke atas untuk tes.")
 
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
+def _format_ba(ws, judul_rows, karyawan, data_start_row):
+    """Helper: format sheet BA dengan styling rapi."""
+    HEADER_BG  = "1F3864"
+    THIN       = Side(style='thin', color="AAAAAA")
+    BORDER     = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+    COL_WIDTHS = [6, 13, 30, 18, 24]   # NO, NIK, NAMA, JABATAN, PERUSAHAAN
+
+    # Judul atas (merge A:E)
+    for r, (val, bold, size) in enumerate(judul_rows, 1):
+        ws.merge_cells(f'A{r}:E{r}')
+        c = ws.cell(r, 1, val)
+        c.font = Font(name='Arial', bold=bold, size=size, color="1F3864")
+        c.alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[r].height = 20
+
+    # Baris kosong sebelum header tabel
+    ws.row_dimensions[data_start_row - 1].height = 6
+
+    # Header tabel
+    for col, h in enumerate(['NO', 'NIK', 'NAMA', 'JABATAN', 'PERUSAHAAN'], 1):
+        c = ws.cell(data_start_row, col, h)
+        c.font = Font(name='Arial', bold=True, color="FFFFFF", size=11)
+        c.fill = PatternFill("solid", fgColor=HEADER_BG)
+        c.alignment = Alignment(horizontal='center', vertical='center')
+        c.border = BORDER
+    ws.row_dimensions[data_start_row].height = 26
+
+    # Data karyawan
+    for i, row in enumerate(karyawan, data_start_row + 1):
+        bg = "DCE6F1" if (i - data_start_row) % 2 == 0 else "FFFFFF"
+        for j, val in enumerate(row, 1):
+            c = ws.cell(i, j, val)
+            c.font = Font(name='Arial', size=10)
+            c.fill = PatternFill("solid", fgColor=bg)
+            c.border = BORDER
+            c.alignment = Alignment(
+                horizontal='center' if j in [1, 2] else 'left',
+                vertical='center'
+            )
+        ws.row_dimensions[i].height = 20
+
+    # Lebar kolom
+    for col, w in enumerate(COL_WIDTHS, 1):
+        ws.column_dimensions[get_column_letter(col)].width = w
+
+    ws.freeze_panes = f'A{data_start_row + 1}'
+
+
 def buat_file_test_maret():
     wb = Workbook()
     ws = wb.active
     ws.title = "BA_Maret"
-    ws['A1'] = 'PT KRAKATAU BAJA'
-    ws['A2'] = 'BERITA ACARA KEHADIRAN TENAGA KERJA'
-    ws['A3'] = 'BULAN: MARET 2026'
-    ws['A4'] = 'LOKASI KERJA: CILEGON'
-    ws['A5'] = ''
-    for col, h in enumerate(['NO', 'NIK', 'NAMA', 'JABATAN', 'PERUSAHAAN'], 1):
-        ws.cell(6, col, h)
+    judul = [
+        ('PT KRAKATAU BAJA',                    True,  13),
+        ('BERITA ACARA KEHADIRAN TENAGA KERJA',  True,  11),
+        ('BULAN: MARET 2026',                    False, 10),
+        ('LOKASI KERJA: CILEGON',                False, 10),
+        ('',                                     False, 10),
+    ]
     karyawan = [
         (1, 'A001', 'Zizah Nur Aini',  'Admin',      'PT Maju Jaya'),
-        (2, 'A002', 'Budi Santoso',     'Teknisi',    'PT Maju Jaya'),
-        (3, 'A003', 'Ani Rahayu',       'Logistik',   'PT Sejahtera'),
-        (4, 'A004', 'Candra Wijaya',    'Supervisor', 'PT Sejahtera'),
-        (5, 'A005', 'Dewi Lestari',     'Operator',   'PT Karya Utama'),
+        (2, 'A002', 'Budi Santoso',    'Teknisi',    'PT Maju Jaya'),
+        (3, 'A003', 'Ani Rahayu',      'Logistik',   'PT Sejahtera'),
+        (4, 'A004', 'Candra Wijaya',   'Supervisor', 'PT Sejahtera'),
+        (5, 'A005', 'Dewi Lestari',    'Operator',   'PT Karya Utama'),
     ]
-    for i, row in enumerate(karyawan, 7):
-        for j, val in enumerate(row, 1):
-            ws.cell(i, j, val)
+    _format_ba(ws, judul, karyawan, data_start_row=6)
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
@@ -166,20 +215,19 @@ def buat_file_test_april():
     wb = Workbook()
     ws = wb.active
     ws.title = "BA_April"
-    ws['A1'] = 'BERITA ACARA KEHADIRAN - APRIL 2026'
-    ws['A2'] = 'KONTRAKTOR: PT MAJU BERSAMA'
-    ws['A3'] = 'LOKASI: CILEGON'
-    for col, h in enumerate(['NO', 'NIK', 'NAMA', 'JABATAN', 'PERUSAHAAN'], 1):
-        ws.cell(4, col, h)
+    judul = [
+        ('PT KRAKATAU BAJA',                   True,  13),
+        ('BERITA ACARA KEHADIRAN TENAGA KERJA', True,  11),
+        ('BULAN: APRIL 2026',                   False, 10),
+        ('KONTRAKTOR: PT MAJU BERSAMA  |  LOKASI: CILEGON', False, 10),
+    ]
     karyawan = [
         (1, 'B001', 'Dedi Kurniawan',    'Driver',   'PT Logindo'),
         (2, 'B002', 'Eka Putri Mandiri', 'Security', 'PT Logindo'),
         (3, 'B003', 'Faisal Rahman',     'Helper',   'PT Konstruksi'),
         (4, 'B004', 'Gina Marlina',      'Operator', 'PT Konstruksi'),
     ]
-    for i, row in enumerate(karyawan, 5):
-        for j, val in enumerate(row, 1):
-            ws.cell(i, j, val)
+    _format_ba(ws, judul, karyawan, data_start_row=5)
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
