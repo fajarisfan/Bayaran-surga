@@ -55,6 +55,73 @@ if uploaded_files:
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
             df_master.to_excel(writer, index=False, sheet_name='Master_Data_Zizah')
 
+        # ✅ Format Excel supaya rapi
+        from openpyxl import load_workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+
+        wb = load_workbook(buffer)
+        ws = wb['Master_Data_Zizah']
+
+        HEADER_BG = "1F3864"
+        THIN = Side(style='thin', color="AAAAAA")
+        BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+
+        col_widths = {
+            'NO': 6, 'NIK': 13, 'NAMA': 30, 'JABATAN': 18,
+            'PERUSAHAAN': 22, 'Sumber_File': 22, 'Mandays_Bulan_Ini': 20
+        }
+        for i, col_name in enumerate(df_master.columns, 1):
+            ws.column_dimensions[get_column_letter(i)].width = col_widths.get(col_name, 15)
+
+        # Insert 3 title rows
+        ws.insert_rows(1, 3)
+
+        ws.merge_cells('A1:G1')
+        ws['A1'].value = 'PT KRAKATAU BAJA'
+        ws['A1'].font = Font(name='Arial', bold=True, size=14, color="2E75B6")
+        ws['A1'].alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[1].height = 28
+
+        ws.merge_cells('A2:G2')
+        ws['A2'].value = 'MASTER DATA KARYAWAN — UNTUK VLOOKUP'
+        ws['A2'].font = Font(name='Arial', bold=True, size=12, color="1F3864")
+        ws['A2'].alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[2].height = 22
+
+        ws.row_dimensions[3].height = 6
+
+        # Header row (now row 4)
+        nice_headers = {
+            'NO': 'No.', 'NIK': 'NIK', 'NAMA': 'Nama Karyawan',
+            'JABATAN': 'Jabatan', 'PERUSAHAAN': 'Perusahaan',
+            'Sumber_File': 'Sumber File', 'Mandays_Bulan_Ini': 'Mandays Bulan Ini'
+        }
+        for cell in ws[4]:
+            cell.value = nice_headers.get(cell.value, cell.value)
+            cell.font = Font(name='Arial', bold=True, color="FFFFFF", size=11)
+            cell.fill = PatternFill("solid", fgColor=HEADER_BG)
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.border = BORDER
+        ws.row_dimensions[4].height = 28
+
+        # Data rows
+        for r_idx, row in enumerate(ws.iter_rows(min_row=5, max_row=ws.max_row), start=1):
+            bg = "DCE6F1" if r_idx % 2 == 0 else "FFFFFF"
+            for cell in row:
+                cell.font = Font(name='Arial', size=10)
+                cell.fill = PatternFill("solid", fgColor=bg)
+                cell.border = BORDER
+                cell.alignment = Alignment(vertical='center')
+                if cell.column in [1, 2, 7]:
+                    cell.alignment = Alignment(horizontal='center', vertical='center')
+            ws.row_dimensions[r_idx + 4].height = 20
+
+        ws.freeze_panes = 'A5'
+
+        buffer = io.BytesIO()
+        wb.save(buffer)
+
         st.download_button(
             label="📥 Download Master Data Lengkap (Excel)",
             data=buffer.getvalue(),
